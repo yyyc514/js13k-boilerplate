@@ -1,4 +1,6 @@
-var program = require('commander');
+"use strict";
+
+// var program = require('commander');
 var browserify = require('browserify');
 var express = require('express');
 var path = require('path');
@@ -19,30 +21,23 @@ var uglify = require('gulp-uglify');
 var zip = require('gulp-zip');
 var source = require('vinyl-source-stream');
 
-program.on('--help', function(){
-  console.log('  Tasks:');
-  console.log();
-  console.log('    build       build the game');
-  console.log('    clean       delete generated files');
-  console.log('    dist        generate archive');
-  console.log('    serve       launch development server');
-  console.log('    watch       watch for file changes and rebuild automatically');
-  console.log();
-});
+var minimist = require('minimist');
 
-program
-  .usage('<task> [options]')
-  .option('-P, --prod', 'generate production assets')
-  .parse(process.argv);
+var knownOptions = {
+  alias: {'P': 'prod'},
+  boolean: true,
+  // default: { env: process.env.NODE_ENV || 'production' }
+};
 
-var prod = !!program.prod;
+var options = minimist(process.argv.slice(2), knownOptions);
+console.log(options)
 
-gulp.task('default', ['build']);
-gulp.task('build', ['build_source', 'build_index', 'build_styles']);
 
-gulp.task('build_source', function() {
-  var bundler = browserify('./src/main', {debug: !prod});
-  if (prod) {
+var production = options.prod
+
+const build_source = () => {
+  var bundler = browserify('./src/main', {debug: !production});
+  if (production) {
     bundler.plugin(require('bundle-collapser/plugin'));
   }
 
@@ -51,41 +46,44 @@ gulp.task('build_source', function() {
     .on('error', browserifyError)
     .pipe(source('build.js'))
     .pipe(buffer())
-    .pipe(gulpif(prod, uglify()))
+    .pipe(gulpif(production, uglify()))
     .pipe(gulp.dest('build'));
-});
+};
 
-gulp.task('build_index', function() {
+const build_index = () => {
   return gulp.src('src/index.html')
-    .pipe(gulpif(prod, htmlmin({
+    .pipe(gulpif(production, htmlmin({
       collapseWhitespace: true,
       removeAttributeQuotes: true,
       removeComments: true,
     })))
     .pipe(gulp.dest('build'));
-});
+};
 
-gulp.task('build_styles', function() {
+const build_styles = () => {
   return gulp.src('src/styles.less')
     .pipe(less())
     .pipe(concat('build.css'))
-    .pipe(gulpif(prod, cssmin()))
+    .pipe(gulpif(production, cssmin()))
     .pipe(gulp.dest('build'));
-});
+};
 
-gulp.task('clean', function() {
+const build = gulp.series(build_source, build_index, build_styles)
+
+const clean = (done) => {
   rimraf.sync('build');
   rimraf.sync('dist');
-});
+  done();
+};
 
-gulp.task('lint', function() {
+const lint = () => {
   return gulp.src(['*.js', 'src/**/*.js'])
     .pipe(eslint())
     .pipe(eslint.format());
-});
+};
 
-gulp.task('dist', ['build'], function() {
-  if (!prod) {
+const dist = gulp.series(build, function() {
+  if (!production) {
     gutil.log(gutil.colors.yellow('WARNING'), gutil.colors.gray('Missing flag --prod'));
     gutil.log(gutil.colors.yellow('WARNING'), gutil.colors.gray('You should generate production assets to lower the archive size'));
   }
@@ -97,13 +95,13 @@ gulp.task('dist', ['build'], function() {
     .pipe(gulp.dest('dist'));
 });
 
-gulp.task('watch', function() {
-  gulp.watch('src/**/*.js', ['lint', 'build_source']);
-  gulp.watch('src/styles.less', ['build_styles']);
-  gulp.watch('src/index.html', ['build_index']);
-});
+const watch = () => {
+  gulp.watch('src/**/*.js', gulp.series(lint, build_source));
+  gulp.watch('src/styles.less', gulp.series(build_styles));
+  gulp.watch('src/index.html', gulp.series(build_index));
+};
 
-gulp.task('serve', ['build'], function() {
+const serve = gulp.series(build, function() {
   var htdocs = path.resolve(__dirname, 'build');
   var app = express();
 
@@ -117,3 +115,14 @@ function browserifyError(err) {
   gutil.log(gutil.colors.red('ERROR'), gutil.colors.gray(err.message));
   this.emit('end');
 }
+
+// gulp.task('build', build);
+// gulp.task('default', build);
+
+exports.clean = clean
+exports.dist = dist
+exports.serve = serve
+exports.build = build
+exports.watch = watch
+exports.lint = lint
+exports.default = build
