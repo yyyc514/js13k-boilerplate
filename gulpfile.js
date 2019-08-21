@@ -1,6 +1,5 @@
 "use strict";
 
-// var program = require('commander');
 var browserify = require('browserify');
 var express = require('express');
 var path = require('path');
