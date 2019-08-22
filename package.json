@@ -7,10 +7,10 @@
   "license": "MIT",
   "repository": "ooflorent/js13k-boilerplate",
   "devDependencies": {
-    "browserify": "^5.10.0",
-    "bundle-collapser": "^1.1.0",
+    "acorn": "^7.0.0",
     "express": "^4.8.4",
     "gulp": "^4.0.2",
+    "gulp-better-rollup": "^4.0.1",
     "gulp-buffer": "0.0.2",
     "gulp-concat": "^2.3.4",
     "gulp-cssmin": "^0.2.0",
@@ -20,11 +20,13 @@
     "gulp-less": "^4.0.1",
     "gulp-micro": "^3.0.0",
     "gulp-size": "^3.0.0",
-    "gulp-uglify": "^3.0.2",
+    "gulp-terser": "^1.2.0",
     "gulp-util": "^3.0.8",
     "gulp-zip": "^5.0.0",
     "minimist": "^1.2.0",
     "rimraf": "^3.0.0",
+    "rollup": "^1.20.0",
+    "terser": "^4.2.0",
     "vinyl-source-stream": "^2.0.0"
   },
   "scripts": {

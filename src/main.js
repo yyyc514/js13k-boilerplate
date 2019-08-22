@@ -1,5 +1,5 @@
-var raf = require('./raf');
-var rng = require('./rng');
+import * as raf from './raf.js'
+import rng from './rng.js'
 
 var canvas = document.querySelector('#game');
 var ctx = canvas.getContext('2d');
